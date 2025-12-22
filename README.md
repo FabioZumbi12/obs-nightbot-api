@@ -25,21 +25,21 @@ You need to configure your Nightbot Client ID, Client Secret, and Redirect URI. 
 ### Option 1: Environment Variables (Recommended)
 
 Edit the .htaccess file and set your environment variables:
-
+```
 SetEnv NIGHTBOT_CLIENT_ID "YOUR_CLIENT_ID"
 SetEnv NIGHTBOT_CLIENT_SECRET "YOUR_CLIENT_SECRET"
 SetEnv NIGHTBOT_REDIRECT_URI "https://your-domain.com/"
-
+```
 ### Option 2: Secrets File
 
 Create a file named nightbot_secrets.php one directory above your public root (to keep it inaccessible from the web) with the following content:
-
+```
 <?php
 $NIGHTBOT_CLIENT_ID = "YOUR_CLIENT_ID";
 $NIGHTBOT_CLIENT_SECRET = "YOUR_CLIENT_SECRET";
 $NIGHTBOT_REDIRECT_URI = "https://your-domain.com/";
 ?>
-
+```
 ## Endpoints
 
 ### GET /
