@@ -200,8 +200,8 @@ if ($method === 'GET') {
     if (!$code) {
         $buttons = "
             <div style='margin-top: 20px;'>
-                <a href='https://github.com/FabioZumbi12/NightbotSR-ObsPlugin/releases' target='_blank' style='display: inline-block; background-color: #7289da; color: #fff; padding: 10px 15px; border-radius: 4px; text-decoration: none; font-size: 14px; margin-right: 10px;'>{$t['download_btn']}</a>
-                <a href='https://github.com/FabioZumbi12/NightbotSR-ObsPlugin/' target='_blank' style='display: inline-block; background-color: #4f545c; color: #fff; padding: 10px 15px; border-radius: 4px; text-decoration: none; font-size: 14px;'>{$t['source_btn']}</a>
+                <a href='https://obsproject.com/forum/resources/nightbot-song-request-sr-dock.2306/' target='_blank' style='display: inline-block; background-color: #7289da; color: #fff; padding: 10px 15px; border-radius: 4px; text-decoration: none; font-size: 14px; margin-right: 10px;'>{$t['download_btn']}</a>
+                <a href='https://github.com/FabioZumbi12/nightbotsr-obsplugin/' target='_blank' style='display: inline-block; background-color: #4f545c; color: #fff; padding: 10px 15px; border-radius: 4px; text-decoration: none; font-size: 14px;'>{$t['source_btn']}</a>
             </div>
         ";
         echo renderHtml($t['info_title'], "<div class='icon-box'>{$svg_download}</div><div><h1 style='color: #7289da'>{$t['info_title']}</h1><p>{$t['info_desc']}</p>{$buttons}</div>");
