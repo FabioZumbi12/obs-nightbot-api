@@ -1,16 +1,12 @@
 <?php
-// Tenta carregar credenciais de um arquivo seguro fora do diretório público
 if (file_exists(__DIR__ . '/../nightbot_secrets.php')) {
     include __DIR__ . '/../nightbot_secrets.php';
 }
 
-// --- CONFIGURAÇÕES ---
-// Preencha com seus dados ou garanta que estejam no ambiente do cPanel
 $CLIENT_ID = $NIGHTBOT_CLIENT_ID ?? getenv('NIGHTBOT_CLIENT_ID');
 $CLIENT_SECRET = $NIGHTBOT_CLIENT_SECRET ?? getenv('NIGHTBOT_CLIENT_SECRET');
 $REDIRECT_URI = $NIGHTBOT_REDIRECT_URI ?? getenv('NIGHTBOT_REDIRECT_URI');
 
-// --- INTERNACIONALIZAÇÃO (i18n) ---
 $lang = substr($_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? 'en', 0, 2);
 $locale = ($lang === 'pt') ? 'pt' : 'en';
 
@@ -29,7 +25,11 @@ $messages = [
         'obs_error' => 'Não foi possível conectar ao plugin do OBS. Verifique se o OBS está aberto.',
         'footer' => 'Esta página não pertence, não é associada e nem faz parte oficial do <a href="https://nightbot.tv" target="_blank">Nightbot</a>.<br>Desenvolvido por FabioZumbi12',
         'rate_limit' => 'Muitas requisições. Tente novamente em 1 minuto.',
-        'refresh_missing' => 'refresh_token ausente'
+        'refresh_missing' => 'refresh_token ausente',
+        'info_title' => 'Plugin OBS Nightbot',
+        'info_desc' => 'Esta página é usada para autenticação do plugin. Para baixar e instalar, utilize os links abaixo:',
+        'download_btn' => 'Baixar Plugin',
+        'source_btn' => 'Código Fonte'
     ],
     'en' => [
         'error' => 'Error',
@@ -45,18 +45,21 @@ $messages = [
         'obs_error' => 'Could not connect to OBS plugin. Check if OBS is open.',
         'footer' => 'This page is not owned by, associated with, or part of <a href="https://nightbot.tv" target="_blank">Nightbot</a>.<br>Developed by FabioZumbi12',
         'rate_limit' => 'Too many requests. Try again in 1 minute.',
-        'refresh_missing' => 'refresh_token missing'
+        'refresh_missing' => 'refresh_token missing',
+        'info_title' => 'OBS Nightbot Plugin',
+        'info_desc' => 'This page is used for plugin authentication. To download and install, use the links below:',
+        'download_btn' => 'Download Plugin',
+        'source_btn' => 'Source Code'
     ]
 ];
 
 $t = $messages[$locale];
 
-// Ícones SVG
 $svg_success = '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#4caf50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>';
 $svg_error = '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#ff5252" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>';
 $svg_loading = '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#7289da" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="spin"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>';
+$svg_download = '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#7289da" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><g class="download-arrow"><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></g></svg>';
 
-// --- TEMPLATE HTML (Mesmo visual do Node.js) ---
 function renderHtml($title, $bodyContent, $script = '') {
     global $t, $locale;
     return "
@@ -107,6 +110,12 @@ function renderHtml($title, $bodyContent, $script = '') {
         .icon-box { margin-bottom: 0; margin-right: 20px; display: flex; justify-content: center; flex-shrink: 0; }
         .spin { animation: spin 2s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
+        .download-arrow { animation: bounce 2s infinite; }
+        @keyframes bounce {
+          0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+          40% { transform: translateY(-6px); }
+          60% { transform: translateY(-3px); }
+        }
       </style>
     </head>
     <body>
@@ -122,33 +131,28 @@ function renderHtml($title, $bodyContent, $script = '') {
     ";
 }
 
-// Verifica se as credenciais foram carregadas corretamente
 if (!$CLIENT_ID || !$CLIENT_SECRET || !$REDIRECT_URI) {
     echo renderHtml($t['config_error'], "<div class='icon-box'>{$svg_error}</div><div><h1 style='color: #ff5252'>{$t['config_error']}</h1><p>{$t['config_missing']}</p></div>");
     exit;
 }
 
-// --- LÓGICA ---
-
 $method = $_SERVER['REQUEST_METHOD'];
 $uri = $_SERVER['REQUEST_URI'];
 
-// 1. Rota de Refresh Token (POST)
-// Verifica se a URL termina com /refresh-token
 if (strpos($uri, '/refresh-token') !== false && $method === 'POST') {
     header('Content-Type: application/json');
     
-    // --- RATE LIMITING (Anti-Spam) ---
-    // Limite: 10 requisições por minuto por IP
     $ip = $_SERVER['REMOTE_ADDR'];
     $limit = 10; 
-    $window = 60; // segundos
+    $window = 60; 
     $rateFile = sys_get_temp_dir() . '/nb_ratelimit_' . md5($ip);
     
     $requests = file_exists($rateFile) ? json_decode(file_get_contents($rateFile), true) : [];
+    if (!is_array($requests)) {
+        $requests = [];
+    }
     $now = time();
     
-    // Remove registros mais antigos que 60 segundos
     $requests = array_filter($requests, function($timestamp) use ($now, $window) {
         return $timestamp > ($now - $window);
     });
@@ -159,10 +163,8 @@ if (strpos($uri, '/refresh-token') !== false && $method === 'POST') {
         exit;
     }
     
-    // Adiciona a requisição atual e salva
     $requests[] = $now;
     file_put_contents($rateFile, json_encode($requests));
-    // ---------------------------------
 
     $input = json_decode(file_get_contents('php://input'), true);
     $refreshToken = $input['refresh_token'] ?? null;
@@ -192,12 +194,17 @@ if (strpos($uri, '/refresh-token') !== false && $method === 'POST') {
     exit;
 }
 
-// 2. Rota de Callback (GET)
 if ($method === 'GET') {
     $code = $_GET['code'] ?? null;
 
     if (!$code) {
-        echo renderHtml($t['error'], "<div class='icon-box'>{$svg_error}</div><div><h1 style='color: #ff5252'>{$t['error']}</h1><p>{$t['auth_code_missing']}</p></div>");
+        $buttons = "
+            <div style='margin-top: 20px;'>
+                <a href='https://github.com/FabioZumbi12/NightbotSR-ObsPlugin/releases' target='_blank' style='display: inline-block; background-color: #7289da; color: #fff; padding: 10px 15px; border-radius: 4px; text-decoration: none; font-size: 14px; margin-right: 10px;'>{$t['download_btn']}</a>
+                <a href='https://github.com/FabioZumbi12/NightbotSR-ObsPlugin/' target='_blank' style='display: inline-block; background-color: #4f545c; color: #fff; padding: 10px 15px; border-radius: 4px; text-decoration: none; font-size: 14px;'>{$t['source_btn']}</a>
+            </div>
+        ";
+        echo renderHtml($t['info_title'], "<div class='icon-box'>{$svg_download}</div><div><h1 style='color: #7289da'>{$t['info_title']}</h1><p>{$t['info_desc']}</p>{$buttons}</div>");
         exit;
     }
 
@@ -221,7 +228,6 @@ if ($method === 'GET') {
         exit;
     }
 
-    // Prepara o JSON para o JS injetar no script
     $jsonResponse = json_encode($data);
     
     $script = "
